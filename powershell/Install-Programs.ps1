@@ -297,7 +297,7 @@ $btnInstall.Add_Click({
     # 4. Runs setup.exe /configure to install silently
     # ---------------------------------------------------------------
     if ($chkProject.Checked) {
-        $ODTUrl    = "https://aka.ms/officedeploymenttool"             # Redirects to latest ODT
+        $ODTUrl    = "https://download.microsoft.com/download/6c1eeb25-cf8b-41d9-8d0d-cc1dbc032140/officedeploymenttool_19628-20192.exe"
         $ODTSetup  = Join-Path $TempDir "ODTSetup.exe"                 # Downloaded self-extractor
         $ODTDir    = Join-Path $TempDir "ODT"                          # Extraction target folder
         $ConfigXml = Join-Path $ODTDir "project-config.xml"            # Generated install config
