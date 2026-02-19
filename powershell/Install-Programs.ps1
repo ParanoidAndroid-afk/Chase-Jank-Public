@@ -456,7 +456,8 @@ $btnInstall.Add_Click({
 
     # ---------------------------------------------------------------
     # Summary
-    # Logs the final result for each program and the download path.
+    # Logs the final result for each program and the download path. 
+    # This is something the user can screenshot for reference since the log textbox is cleared on each run.
     # ---------------------------------------------------------------
     $progressBar.Value = 100
 
