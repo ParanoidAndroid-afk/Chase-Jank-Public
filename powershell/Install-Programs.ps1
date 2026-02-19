@@ -1,7 +1,7 @@
 # #Requires -RunAsAdministrator  # TODO: Uncomment for production use
 <#
 .SYNOPSIS
-    Guided UI to silently install Bluebeam Revu, Microsoft Project, Procore Drive, and Dropbox.
+    Guided UI to silently install Bluebeam Revu, Microsoft Project, Procore Drive, Dropbox, and Steam.
 
 .DESCRIPTION
     Presents a Windows Forms GUI where the user selects which programs to install,
@@ -18,6 +18,7 @@
       - Microsoft Project Professional (via Office Deployment Tool)
       - Procore Drive (MSI)
       - Dropbox (full offline installer)
+      - Steam (EXE installer)
 
     Downloads are cached in a "Downloads" folder next to this script so
     re-running the installer does not re-download files that already exist.
@@ -127,11 +128,19 @@ $chkDropbox.Location = New-Object System.Drawing.Point(30, 250)
 $chkDropbox.Size     = New-Object System.Drawing.Size(400, 25)
 $form.Controls.Add($chkDropbox)
 
+# --- Steam checkbox ---
+# Downloads the Steam installer and installs silently
+$chkSteam = New-Object System.Windows.Forms.CheckBox
+$chkSteam.Text     = "Steam"
+$chkSteam.Location = New-Object System.Drawing.Point(30, 290)
+$chkSteam.Size     = New-Object System.Drawing.Size(400, 25)
+$form.Controls.Add($chkSteam)
+
 # --- Select All checkbox ---
-# Convenience toggle: checks or unchecks all four program checkboxes at once
+# Convenience toggle: checks or unchecks all five program checkboxes at once
 $chkAll = New-Object System.Windows.Forms.CheckBox
 $chkAll.Text     = "Select All"
-$chkAll.Location = New-Object System.Drawing.Point(30, 295)
+$chkAll.Location = New-Object System.Drawing.Point(30, 335)
 $chkAll.Size     = New-Object System.Drawing.Size(200, 25)
 $chkAll.Font     = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
 $chkAll.Add_CheckedChanged({
@@ -140,6 +149,7 @@ $chkAll.Add_CheckedChanged({
     $chkProject.Checked  = $chkAll.Checked
     $chkProcore.Checked  = $chkAll.Checked
     $chkDropbox.Checked  = $chkAll.Checked
+    $chkSteam.Checked    = $chkAll.Checked
 })
 $form.Controls.Add($chkAll)
 
@@ -215,6 +225,7 @@ $btnInstall.Add_Click({
     if ($chkProject.Checked)  { $selected += "Project" }
     if ($chkProcore.Checked)  { $selected += "Procore" }
     if ($chkDropbox.Checked)  { $selected += "Dropbox" }
+    if ($chkSteam.Checked)    { $selected += "Steam" }
 
     # Guard: require at least one selection before proceeding
     if ($selected.Count -eq 0) {
@@ -234,6 +245,7 @@ $btnInstall.Add_Click({
     $chkProject.Enabled  = $false
     $chkProcore.Enabled  = $false
     $chkDropbox.Enabled  = $false
+    $chkSteam.Enabled    = $false
     $grpBbVersion.Enabled = $false
 
     # Progress tracking: step counter and results hashtable
@@ -413,6 +425,36 @@ $btnInstall.Add_Click({
     }
 
     # ---------------------------------------------------------------
+    # Steam
+    # Downloads the Steam installer from Valve's servers and
+    # installs silently with the /S flag.
+    # ---------------------------------------------------------------
+    if ($chkSteam.Checked) {
+        $SteamInstaller = Join-Path $TempDir "SteamSetup.exe"
+        $SteamUrl       = 'https://steamcdn-a.akamaihd.net/client/installer/SteamSetup.exe'  # Official Steam installer
+
+        try {
+            # Download the installer (only if not cached)
+            if (-not (Test-Path $SteamInstaller)) {
+                Write-Log "Downloading Steam..."
+                Invoke-WebRequest -Uri $SteamUrl -OutFile $SteamInstaller -UseBasicParsing
+                Write-Log "Steam download complete."
+            } else {
+                Write-Log "Using cached Steam installer."
+            }
+            # Run silent install (/S flag for NSIS-based installers)
+            Write-Log "Installing Steam (silent)..."
+            Start-Process -FilePath $SteamInstaller -ArgumentList "/S" -Wait -NoNewWindow
+            Write-Log "Steam installed successfully."
+            $results["Steam"] = "Installed"
+        } catch {
+            Write-Log "ERROR: Steam - $($_.Exception.Message)"
+            $results["Steam"] = "FAILED"
+        }
+        Update-Progress "Steam complete."
+    }
+
+    # ---------------------------------------------------------------
     # Summary
     # Logs the final result for each program and the download path.
     # ---------------------------------------------------------------
@@ -433,6 +475,7 @@ $btnInstall.Add_Click({
     $chkProject.Enabled  = $true
     $chkProcore.Enabled  = $true
     $chkDropbox.Enabled  = $true
+    $chkSteam.Enabled    = $true
     if ($chkBluebeam.Checked) { $grpBbVersion.Enabled = $true }
 })
 
